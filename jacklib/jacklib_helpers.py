@@ -3,6 +3,7 @@
 
 # Helper functions for extra jacklib functionality
 # Copyright (C) 2012-2013 Filipe Coelho <falktx@falktx.com>
+#               2016-2021 Christopher Arndt <chrisæchrisarndt.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

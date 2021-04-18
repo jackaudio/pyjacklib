@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# JACK ctypes definitions for usage in python applications
-# Copyright (C) 2010-2013 Filipe Coelho <falktx@falktx.com>
+# JACK ctypes definitions for usage in Python applications
+# Copyright (C) 2010-2020 Filipe Coelho <falktx@falktx.com>
+#               2016-2021 Christopher Arndt <chrisæchrisarndt.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
