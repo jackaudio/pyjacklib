@@ -63,7 +63,7 @@ Please see the file [COPYING] for more information.
 
 Created by *Filipe Coelho (falkTX)* as part of [Cadence].
 
-Turned into stand-alone project and enhanced by *Christopher Arndt*.
+Turned into a stand-alone project and enhanced by *Christopher Arndt*.
 
 
 [C API]: https://jackaudio.org/api/
