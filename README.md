@@ -6,6 +6,7 @@ client applications in Python.
 The library provides a low-level, almost unaltered mapping of the `libjack`
 [C API], plus a few additional convenience functions.
 
+The source code repository contains a few [example scripts] to show its usage.
 
 **Note:** **pyjacklib** *as a stand-alone project is in an early beta-stage and
 the API may still change slightly before a 1.0 release. You have been warned!*
@@ -55,7 +56,7 @@ pip wheel .
 **pyjacklib** is licensed under the GNU Public License Version v2, or
 any later version.
 
-Please see the file [COPYING](./COPYING) for more information.
+Please see the file [COPYING] for more information.
 
 
 ## Authors
@@ -67,7 +68,9 @@ Turned into stand-alone project and enhanced by *Christopher Arndt*.
 
 [C API]: https://jackaudio.org/api/
 [Cadence]: https://github.com/falkTX/Cadence.git
+[COPYING]: https://github.com/jackaudio/pyjacklib/blob/master/COPYING
 [ctypes]: https://docs.python.org/3/library/ctypes.html
+[example scripts]: https://github.com/jackaudio/pyjacklib/tree/master/examples
 [JACK]: https://jackaudio.org/
 [pip]: https://pypi.org/project/pip/
 [setuptools]: https://pypi.org/project/setuptools/
