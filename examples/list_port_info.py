@@ -9,10 +9,16 @@ from jacklib.helpers import c_char_p_p_to_list, get_jack_status_error_string
 
 status = jacklib.jack_status_t()
 client = jacklib.client_open("list-port-info", jacklib.JackNoStartServer, status)
+err = get_jack_status_error_string(status)
 
-if status:
-    err = get_jack_status_error_string(status)
-    sys.exit("Error connecting to JACK server: %s" % err)
+if status.value:
+    if status.value & jacklib.JackNameNotUnique:
+        print("Non-fatal JACK status: %s" % err, file=sys.stderr)
+    elif status.value & jacklib.JackServerStarted:
+        # Should not happen, since we use the JackNoStartServer option
+        print("Unexpected JACK status: %s" % err, file=sys.stderr)
+    else:
+        sys.exit("Error connecting to JACK server: %s" % err)
 
 for portname in c_char_p_p_to_list(jacklib.get_ports(client)):
     port = jacklib.port_by_name(client, portname)
