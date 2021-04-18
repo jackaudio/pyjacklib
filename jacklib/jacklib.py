@@ -995,7 +995,10 @@ def port_get_connections(port):
 
 
 def port_get_all_connections(client, port):
-    for port_name in jlib.jack_port_get_all_connections(client, port):
+    ports = jlib.jack_port_get_all_connections(client, port)
+    if not ports:
+        return
+    for port_name in ports:
         if port_name is None:
             break
         yield _d(port_name)
