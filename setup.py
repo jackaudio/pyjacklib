@@ -13,4 +13,4 @@ def read(*args):
 PKGDIR = 'jacklib'
 version = {}
 exec(read(PKGDIR, 'version.py'), {}, version)
-setup(packages=[PKGDIR], **version)
+setup(version=version["__version__"], packages=[PKGDIR])
