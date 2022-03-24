@@ -56,7 +56,7 @@ pip wheel .
 **pyjacklib** is licensed under the GNU Public License Version v2, or
 any later version.
 
-Please see the file [COPYING] for more information.
+Please see the file [COPYING.md] for more information.
 
 
 ## Authors
@@ -68,9 +68,9 @@ Turned into a stand-alone project and enhanced by *Christopher Arndt*.
 
 [C API]: https://jackaudio.org/api/
 [Cadence]: https://github.com/falkTX/Cadence.git
-[COPYING]: https://github.com/jackaudio/pyjacklib/blob/master/COPYING
+[copying.m]: https://github.com/jackaudio/pyjacklib/blob/master/COPYING.md
 [ctypes]: https://docs.python.org/3/library/ctypes.html
 [example scripts]: https://github.com/jackaudio/pyjacklib/tree/master/examples
-[JACK]: https://jackaudio.org/
+[jack]: https://jackaudio.org/
 [pip]: https://pypi.org/project/pip/
 [setuptools]: https://pypi.org/project/setuptools/
