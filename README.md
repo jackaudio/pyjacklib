@@ -8,8 +8,8 @@ The library provides a low-level, almost unaltered mapping of the `libjack`
 
 The source code repository contains a few [example scripts] to show its usage.
 
-**Note:** **pyjacklib** *as a stand-alone project is in an early beta-stage and
-the API may still change slightly before a 1.0 release. You have been warned!*
+**Note:** **pyjacklib** *as a stand-alone project is in beta-stage and the API
+may still change slightly before a 1.0 release. You have been warned!*
 
 
 ## Dependencies
