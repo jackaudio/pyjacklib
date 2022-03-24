@@ -68,7 +68,7 @@ Turned into a stand-alone project and enhanced by *Christopher Arndt*.
 
 [C API]: https://jackaudio.org/api/
 [Cadence]: https://github.com/falkTX/Cadence.git
-[copying.m]: https://github.com/jackaudio/pyjacklib/blob/master/COPYING.md
+[copying.md]: https://github.com/jackaudio/pyjacklib/blob/master/COPYING.md
 [ctypes]: https://docs.python.org/3/library/ctypes.html
 [example scripts]: https://github.com/jackaudio/pyjacklib/tree/master/examples
 [jack]: https://jackaudio.org/
