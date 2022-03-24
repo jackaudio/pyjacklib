@@ -15,16 +15,12 @@
 #
 # For a full copy of the GNU General Public License see the file COPYING.md.
 
-# -------------------------------------------------------------------------------------------------
-# Try Import jacklib
-
 from . import api as jacklib
-
-# -------------------------------------------------------------------------------------------------
-# Get JACK error status as string
 
 
 def get_jack_status_error_string(cStatus):
+    """Get JACK error status as string."""
+
     status = cStatus.value
 
     if status == 0x0:
@@ -63,11 +59,8 @@ def get_jack_status_error_string(cStatus):
     return ";\n".join(errorString) + "."
 
 
-# -------------------------------------------------------------------------------------------------
-# Convert C char** -> Python list
-
-
 def c_char_p_p_to_list(c_char_p_p, encoding=jacklib.ENCODING, errors="ignore"):
+    """Convert C char** -> Python list of strings."""
     i = 0
     retList = []
 
@@ -86,29 +79,22 @@ def c_char_p_p_to_list(c_char_p_p, encoding=jacklib.ENCODING, errors="ignore"):
     return retList
 
 
-# -------------------------------------------------------------------------------------------------
-# Convert C void* -> string
-
-
 def voidptr2str(void_p):
+    """Convert C void* -> string."""
     char_p = jacklib.cast(void_p, jacklib.c_char_p)
     string = str(char_p.value, encoding="utf-8")
     return string
 
 
-# -------------------------------------------------------------------------------------------------
-# Convert C void* -> jack_default_audio_sample_t*
-
-
 def translate_audio_port_buffer(void_p):
+    """Convert C void* -> jack_default_audio_sample_t*."""
+
     return jacklib.cast(void_p, jacklib.POINTER(jacklib.jack_default_audio_sample_t))
 
 
-# -------------------------------------------------------------------------------------------------
-# Convert a JACK midi buffer into a python variable-size list
-
-
 def translate_midi_event_buffer(void_p, size):
+    """Convert a JACK MIDI buffer into a Python tuple of 0-4 elements."""
+
     if not void_p:
         return ()
     elif size == 1:
