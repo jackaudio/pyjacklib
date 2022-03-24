@@ -22,7 +22,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from . import api as jacklib
 
-
 # -------------------------------------------------------------------------------------------------
 # Get JACK error status as string
 

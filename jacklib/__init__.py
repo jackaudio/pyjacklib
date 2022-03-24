@@ -15,5 +15,5 @@
 #
 # For a full copy of the GNU General Public License see the file COPYING.md.
 
-from .version import __version__  # noqa
 from .api import *  # noqa
+from .version import __version__  # noqa
