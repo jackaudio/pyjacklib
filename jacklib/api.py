@@ -1,6 +1,5 @@
 """JACK ctypes definitions for usage in python applications."""
 
-# JACK ctypes definitions for usage in python applications
 # Copyright (C) 2010-2020 Filipe Coelho <falktx@falktx.com>
 #               2016-2022 Christopher Arndt <info@chrisarndt.de>
 #

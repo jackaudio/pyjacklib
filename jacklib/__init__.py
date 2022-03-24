@@ -1,4 +1,5 @@
-# Python bindings for libjack using ctypes
+"""Python bindings for libjack using ctypes."""
+
 # Copyright (C) 2010-2020 Filipe Coelho <falktx@falktx.com>
 #               2016-2022 Christopher Arndt <info@chrisarndt.de>
 #
