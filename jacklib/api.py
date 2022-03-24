@@ -38,21 +38,31 @@ from ctypes import (
     c_void_p,
     cdll,
     pointer,
+    sizeof,
 )
 from sys import platform
 
 # -------------------------------------------------------------------------------------------------
 # Load JACK shared library
 
+
+def _is_python_64bit():
+    return sizeof(c_void_p) == 8
+
+
 try:
     if platform == "darwin":
-        jlib = cdll.LoadLibrary("libjack.dylib")
-    elif platform in ("win32", "win64", "cygwin"):
-        jlib = cdll.LoadLibrary("libjack.dll")
+        _libname = "libjack.dylib"
+    elif platform in ("win32", "cygwin"):
+        if _is_python_64bit():
+            _libname = "libjack64.dll"
+        else:
+            _libname = "libjack.dll"
     else:
-        jlib = cdll.LoadLibrary("libjack.so.0")
+        _libname = "libjack.so.0"
+
+    jlib = cdll.LoadLibrary(_libname)
 except OSError:
-    jlib = None
     raise ImportError("JACK is not available in this system")
 
 
