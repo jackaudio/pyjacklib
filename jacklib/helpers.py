@@ -26,6 +26,7 @@ from . import api as jacklib
 # -------------------------------------------------------------------------------------------------
 # Get JACK error status as string
 
+
 def get_jack_status_error_string(cStatus):
     status = cStatus.value
 
@@ -68,7 +69,8 @@ def get_jack_status_error_string(cStatus):
 # -------------------------------------------------------------------------------------------------
 # Convert C char** -> Python list
 
-def c_char_p_p_to_list(c_char_p_p, encoding=jacklib.ENCODING, errors='ignore'):
+
+def c_char_p_p_to_list(c_char_p_p, encoding=jacklib.ENCODING, errors="ignore"):
     i = 0
     retList = []
 
@@ -90,6 +92,7 @@ def c_char_p_p_to_list(c_char_p_p, encoding=jacklib.ENCODING, errors='ignore'):
 # -------------------------------------------------------------------------------------------------
 # Convert C void* -> string
 
+
 def voidptr2str(void_p):
     char_p = jacklib.cast(void_p, jacklib.c_char_p)
     string = str(char_p.value, encoding="utf-8")
@@ -99,12 +102,14 @@ def voidptr2str(void_p):
 # -------------------------------------------------------------------------------------------------
 # Convert C void* -> jack_default_audio_sample_t*
 
+
 def translate_audio_port_buffer(void_p):
     return jacklib.cast(void_p, jacklib.POINTER(jacklib.jack_default_audio_sample_t))
 
 
 # -------------------------------------------------------------------------------------------------
 # Convert a JACK midi buffer into a python variable-size list
+
 
 def translate_midi_event_buffer(void_p, size):
     if not void_p:

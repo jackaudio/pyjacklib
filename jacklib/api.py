@@ -20,9 +20,26 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from ctypes import (ARRAY, CFUNCTYPE, POINTER, Structure, byref, c_char_p, c_double, c_float,
-                    c_int, c_int32, c_size_t, c_uint8, c_uint32, c_uint64, c_ulong, c_void_p, cdll,
-                    pointer)
+from ctypes import (
+    ARRAY,
+    CFUNCTYPE,
+    POINTER,
+    Structure,
+    byref,
+    c_char_p,
+    c_double,
+    c_float,
+    c_int,
+    c_int32,
+    c_size_t,
+    c_uint8,
+    c_uint32,
+    c_uint64,
+    c_ulong,
+    c_void_p,
+    cdll,
+    pointer,
+)
 from collections import namedtuple
 from sys import platform
 
@@ -99,6 +116,7 @@ JACK_METADATA_SIGNAL_TYPE = _JACK_METADATA_PREFIX + "signal-type"
 # -------------------------------------------------------------------------------------------------
 # Helper functions
 
+
 def _e(s, encoding=ENCODING):
     if encoding:
         return s.encode(encoding)
@@ -124,15 +142,15 @@ jack_time_t = c_uint64
 jack_unique_t = c_uint64
 jack_uuid_t = c_uint64
 
-jack_options_t = c_enum                 # JackOptions
-jack_status_t = c_enum                  # JackStatus
-jack_transport_state_t = c_enum         # JackTransportState
-jack_position_bits_t = c_enum           # JackPositionBits
-jack_session_event_type_t = c_enum      # JackSessionEventType
-jack_session_flags_t = c_enum           # JackSessionFlags
-jack_custom_change_t = c_enum           # JackCustomChange
-jack_latency_callback_mode_t = c_enum   # JackLatencyCallbackMode
-jack_property_change_t = c_enum         # JacKPropertyChange
+jack_options_t = c_enum  # JackOptions
+jack_status_t = c_enum  # JackStatus
+jack_transport_state_t = c_enum  # JackTransportState
+jack_position_bits_t = c_enum  # JackPositionBits
+jack_session_event_type_t = c_enum  # JackSessionEventType
+jack_session_flags_t = c_enum  # JackSessionFlags
+jack_custom_change_t = c_enum  # JackCustomChange
+jack_latency_callback_mode_t = c_enum  # JackLatencyCallbackMode
+jack_property_change_t = c_enum  # JacKPropertyChange
 
 # JACK2 only:
 jack_port_type_id_t = c_uint32
@@ -189,8 +207,13 @@ JackPositionTimecode = 0x20
 JackBBTFrameOffset = 0x40
 JackAudioVideoRatio = 0x80
 JackVideoFrameOffset = 0x100
-JACK_POSITION_MASK = (JackPositionBBT | JackPositionTimecode | JackBBTFrameOffset
-                      | JackAudioVideoRatio | JackVideoFrameOffset)
+JACK_POSITION_MASK = (
+    JackPositionBBT
+    | JackPositionTimecode
+    | JackBBTFrameOffset
+    | JackAudioVideoRatio
+    | JackVideoFrameOffset
+)
 
 # enum JackSessionEventType
 JackSessionSave = 1
@@ -215,19 +238,13 @@ PropertyDeleted = 2
 # -------------------------------------------------------------------------------------------------
 # Structs
 
+
 class jack_midi_event_t(Structure):
-    _fields_ = [
-        ("time", jack_nframes_t),
-        ("size", c_size_t),
-        ("buffer", POINTER(jack_midi_data_t))
-    ]
+    _fields_ = [("time", jack_nframes_t), ("size", c_size_t), ("buffer", POINTER(jack_midi_data_t))]
 
 
 class jack_latency_range_t(Structure):
-    _fields_ = [
-        ("min", jack_nframes_t),
-        ("max", jack_nframes_t)
-    ]
+    _fields_ = [("min", jack_nframes_t), ("max", jack_nframes_t)]
 
 
 class jack_position_t(Structure):
@@ -251,7 +268,7 @@ class jack_position_t(Structure):
         ("audio_frames_per_video_frame", c_float),
         ("video_offset", jack_nframes_t),
         ("padding", ARRAY(c_int32, 7)),
-        ("unique_2", jack_unique_t)
+        ("unique_2", jack_unique_t),
     ]
 
 
@@ -262,7 +279,7 @@ class jack_session_event_t(Structure):
         ("client_uuid", c_char_p),
         ("command_line", c_char_p),
         ("flags", jack_session_flags_t),
-        ("future", c_uint32)
+        ("future", c_uint32),
     ]
 
 
@@ -271,24 +288,20 @@ class jack_session_command_t(Structure):
         ("uuid", c_char_p),
         ("client_name", c_char_p),
         ("command", c_char_p),
-        ("flags", jack_session_flags_t)
+        ("flags", jack_session_flags_t),
     ]
 
 
 class jack_property_t(Structure):
-    _fields_ = [
-        ('key', c_char_p),
-        ('data', c_char_p),
-        ('type', c_char_p)
-    ]
+    _fields_ = [("key", c_char_p), ("data", c_char_p), ("type", c_char_p)]
 
 
 class jack_description_t(Structure):
     _fields_ = [
-        ('subject', jack_uuid_t),
-        ('property_cnt', c_uint32),
-        ('properties', POINTER(jack_property_t)),
-        ('property_size', c_uint32)
+        ("subject", jack_uuid_t),
+        ("property_cnt", c_uint32),
+        ("properties", POINTER(jack_property_t)),
+        ("property_size", c_uint32),
     ]
 
 
@@ -314,13 +327,16 @@ JackFreewheelCallback = CFUNCTYPE(None, c_int, c_void_p)
 JackShutdownCallback = CFUNCTYPE(None, c_void_p)
 JackInfoShutdownCallback = CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p)
 JackSyncCallback = CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p)
-JackTimebaseCallback = CFUNCTYPE(None, jack_transport_state_t, jack_nframes_t,
-                                 POINTER(jack_position_t), c_int, c_void_p)
+JackTimebaseCallback = CFUNCTYPE(
+    None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
+)
 JackSessionCallback = CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p)
-JackCustomDataAppearanceCallback = CFUNCTYPE(None, c_char_p, c_char_p, jack_custom_change_t,
-                                             c_void_p)
-JackPropertyChangeCallback = CFUNCTYPE(None, jack_uuid_t, c_char_p, jack_property_change_t,
-                                       c_void_p)
+JackCustomDataAppearanceCallback = CFUNCTYPE(
+    None, c_char_p, c_char_p, jack_custom_change_t, c_void_p
+)
+JackPropertyChangeCallback = CFUNCTYPE(
+    None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
+)
 JackErrorCallback = CFUNCTYPE(None, c_char_p)
 
 # -------------------------------------------------------------------------------------------------
@@ -518,7 +534,7 @@ try:
     jlib.jack_set_thread_init_callback.argtypes = [
         POINTER(jack_client_t),
         JackThreadInitCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_thread_init_callback.restype = c_int
 except AttributeError:
@@ -534,7 +550,7 @@ try:
     jlib.jack_on_info_shutdown.argtypes = [
         POINTER(jack_client_t),
         JackInfoShutdownCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_on_info_shutdown.restype = None
 except AttributeError:
@@ -544,7 +560,7 @@ try:
     jlib.jack_set_process_callback.argtypes = [
         POINTER(jack_client_t),
         JackProcessCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_process_callback.restype = c_int
 except AttributeError:
@@ -554,7 +570,7 @@ try:
     jlib.jack_set_freewheel_callback.argtypes = [
         POINTER(jack_client_t),
         JackFreewheelCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_freewheel_callback.restype = c_int
 except AttributeError:
@@ -564,7 +580,7 @@ try:
     jlib.jack_set_buffer_size_callback.argtypes = [
         POINTER(jack_client_t),
         JackBufferSizeCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_buffer_size_callback.restype = c_int
 except AttributeError:
@@ -574,7 +590,7 @@ try:
     jlib.jack_set_sample_rate_callback.argtypes = [
         POINTER(jack_client_t),
         JackSampleRateCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_sample_rate_callback.restype = c_int
 except AttributeError:
@@ -584,7 +600,7 @@ try:
     jlib.jack_set_client_registration_callback.argtypes = [
         POINTER(jack_client_t),
         JackClientRegistrationCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_client_registration_callback.restype = c_int
 except AttributeError:
@@ -594,7 +610,7 @@ try:
     jlib.jack_set_client_rename_callback.argtypes = [
         POINTER(jack_client_t),
         JackClientRenameCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_client_rename_callback.restype = c_int
 except AttributeError:
@@ -604,7 +620,7 @@ try:
     jlib.jack_set_port_registration_callback.argtypes = [
         POINTER(jack_client_t),
         JackPortRegistrationCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_port_registration_callback.restype = c_int
 except AttributeError:
@@ -614,7 +630,7 @@ try:
     jlib.jack_set_port_connect_callback.argtypes = [
         POINTER(jack_client_t),
         JackPortConnectCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_port_connect_callback.restype = c_int
 except AttributeError:
@@ -624,7 +640,7 @@ try:
     jlib.jack_set_port_rename_callback.argtypes = [
         POINTER(jack_client_t),
         JackPortRenameCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_port_rename_callback.restype = c_int
 except AttributeError:
@@ -634,7 +650,7 @@ try:
     jlib.jack_set_graph_order_callback.argtypes = [
         POINTER(jack_client_t),
         JackGraphOrderCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_graph_order_callback.restype = c_int
 except AttributeError:
@@ -650,7 +666,7 @@ try:
     jlib.jack_set_latency_callback.argtypes = [
         POINTER(jack_client_t),
         JackLatencyCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_latency_callback.restype = c_int
 except AttributeError:
@@ -720,8 +736,9 @@ def set_client_registration_callback(client, client_registration_callback, arg):
     if jlib.jack_set_client_registration_callback:
         global _client_registration_callback
         _client_registration_callback = JackClientRegistrationCallback(client_registration_callback)
-        return jlib.jack_set_client_registration_callback(client, _client_registration_callback,
-                                                          arg)
+        return jlib.jack_set_client_registration_callback(
+            client, _client_registration_callback, arg
+        )
     return -1
 
 
@@ -1093,7 +1110,7 @@ try:
     jlib.jack_port_get_latency_range.argtypes = [
         POINTER(jack_port_t),
         jack_latency_callback_mode_t,
-        POINTER(jack_latency_range_t)
+        POINTER(jack_latency_range_t),
     ]
     jlib.jack_port_get_latency_range.restype = None
 except AttributeError:
@@ -1103,7 +1120,7 @@ try:
     jlib.jack_port_set_latency_range.argtypes = [
         POINTER(jack_port_t),
         jack_latency_callback_mode_t,
-        POINTER(jack_latency_range_t)
+        POINTER(jack_latency_range_t),
     ]
     jlib.jack_port_set_latency_range.restype = None
 except AttributeError:
@@ -1166,8 +1183,9 @@ jlib.jack_port_by_id.restype = POINTER(jack_port_t)
 
 
 def get_ports(client, port_name_pattern=None, type_name_pattern=None, flags=0):
-    return jlib.jack_get_ports(client, _e(port_name_pattern or ''),
-                               _e(type_name_pattern or ''), flags)
+    return jlib.jack_get_ports(
+        client, _e(port_name_pattern or ""), _e(type_name_pattern or ""), flags
+    )
 
 
 def port_by_name(client, port_name):
@@ -1197,7 +1215,7 @@ try:
         POINTER(jack_nframes_t),
         POINTER(jack_time_t),
         POINTER(jack_time_t),
-        POINTER(c_float)
+        POINTER(c_float),
     ]
     jlib.jack_get_cycle_times.restype = c_int
 except AttributeError:
@@ -1228,8 +1246,9 @@ def last_frame_time(client):
 def get_cycle_times(client, current_frames, current_usecs, next_usecs, period_usecs):
     # JACK_OPTIONAL_WEAK_EXPORT
     if jlib.jack_frames_to_time:
-        return jlib.jack_get_cycle_times(client, current_frames, current_usecs, next_usecs,
-                                         period_usecs)
+        return jlib.jack_get_cycle_times(
+            client, current_frames, current_usecs, next_usecs, period_usecs
+        )
     return -1
 
 
@@ -1294,7 +1313,7 @@ jlib.jack_set_timebase_callback.argtypes = [
     POINTER(jack_client_t),
     c_int,
     JackTimebaseCallback,
-    c_void_p
+    c_void_p,
 ]
 jlib.jack_set_timebase_callback.restype = c_int
 
@@ -1383,7 +1402,7 @@ jlib.jack_midi_event_write.argtypes = [
     c_void_p,
     jack_nframes_t,
     POINTER(jack_midi_data_t),
-    c_size_t
+    c_size_t,
 ]
 jlib.jack_midi_event_write.restype = c_int
 
@@ -1428,7 +1447,7 @@ try:
     jlib.jack_set_session_callback.argtypes = [
         POINTER(jack_client_t),
         JackSessionCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_session_callback.restype = c_int
 except AttributeError:
@@ -1457,7 +1476,7 @@ try:
         POINTER(jack_client_t),
         c_char_p,
         jack_session_event_type_t,
-        c_char_p
+        c_char_p,
     ]
     jlib.jack_session_notify.restype = POINTER(jack_session_command_t)
 except AttributeError:
@@ -1609,7 +1628,7 @@ try:
         c_char_p,
         c_char_p,
         POINTER(c_void_p),
-        POINTER(c_size_t)
+        POINTER(c_size_t),
     ]
     jlib.jack_custom_get_data.restype = c_int
 except AttributeError:
@@ -1631,7 +1650,7 @@ try:
     jlib.jack_custom_set_data_appearance_callback.argtypes = [
         POINTER(jack_client_t),
         JackCustomDataAppearanceCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_custom_set_data_appearance_callback.restype = c_int
 except AttributeError:
@@ -1653,8 +1672,9 @@ def custom_get_data(client, client_name, key):
     if jlib.jack_custom_get_data:
         data = c_void_p(0)
         size = c_size_t(0)
-        ret = jlib.jack_custom_get_data(client, _e(client_name), _e(key), pointer(data),
-                                        pointer(size))
+        ret = jlib.jack_custom_get_data(
+            client, _e(client_name), _e(key), pointer(data), pointer(size)
+        )
         return ret, data, size
 
     return -1, None, 0
@@ -1677,15 +1697,16 @@ def custom_set_data_appearance_callback(client, custom_callback, arg):
     if jlib.jack_custom_set_data_appearance_callback:
         global _custom_appearance_callback
         _custom_appearance_callback = JackCustomDataAppearanceCallback(custom_callback)
-        return jlib.jack_custom_set_data_appearance_callback(client, _custom_appearance_callback,
-                                                             arg)
+        return jlib.jack_custom_set_data_appearance_callback(
+            client, _custom_appearance_callback, arg
+        )
     return -1
 
 
 # -------------------------------------------------------------------------------------------------
 # Meta data
 
-Property = namedtuple('Property', ('key', 'value', 'type'))
+Property = namedtuple("Property", ("key", "value", "type"))
 
 try:
     jlib.jack_free_description.argtypes = [POINTER(jack_description_t), c_int]
@@ -1714,14 +1735,14 @@ try:
         jack_uuid_t,
         c_char_p,
         c_char_p,
-        c_char_p
+        c_char_p,
     ]
     jlib.jack_set_property.restype = c_int
 
     jlib.jack_set_property_change_callback.argtypes = [
         POINTER(jack_client_t),
         JackPropertyChangeCallback,
-        c_void_p
+        c_void_p,
     ]
     jlib.jack_set_property_change_callback.restype = c_int
 except AttributeError:
@@ -1754,7 +1775,7 @@ def _decode_property(prop, encoding=ENCODING):
         except UnicodeDecodeError:
             pass
         else:
-            decode_value = type_.startswith('text/')
+            decode_value = type_.startswith("text/")
 
     if decode_value:
         try:
@@ -1834,7 +1855,7 @@ def get_property(subject, key, encoding=ENCODING):
                 # it to decide whether to decode the property value.
                 type_ = type_c.value
             else:
-                decode_value = type_.startswith('text/')
+                decode_value = type_.startswith("text/")
 
             free(type_c)
         else:
@@ -1936,8 +1957,7 @@ def set_port_property(client, port, key, value, type=None, encoding=ENCODING):
 
 
 def set_port_pretty_name(client, port, value, encoding=ENCODING):
-    return set_port_property(client, port, JACK_METADATA_PRETTY_NAME, value, 'text/plain',
-                             encoding)
+    return set_port_property(client, port, JACK_METADATA_PRETTY_NAME, value, "text/plain", encoding)
 
 
 def set_property_change_callback(client, callback, arg=None):
