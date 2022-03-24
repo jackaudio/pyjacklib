@@ -155,7 +155,6 @@ jack_transport_state_t = c_enum  # JackTransportState
 jack_position_bits_t = c_enum  # JackPositionBits
 jack_session_event_type_t = c_enum  # JackSessionEventType
 jack_session_flags_t = c_enum  # JackSessionFlags
-jack_custom_change_t = c_enum  # JackCustomChange
 jack_latency_callback_mode_t = c_enum  # JackLatencyCallbackMode
 jack_property_change_t = c_enum  # JacKPropertyChange
 
@@ -230,11 +229,6 @@ JackSessionSaveTemplate = 3
 # enum JackSessionFlags
 JackSessionSaveError = 0x01
 JackSessionNeedTerminal = 0x02
-
-# enum JackCustomChange
-JackCustomRemoved = 0
-JackCustomAdded = 1
-JackCustomReplaced = 2
 
 # enum JackPropertyChange
 PropertyCreated = 0
@@ -338,9 +332,6 @@ JackTimebaseCallback = CFUNCTYPE(
     None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
 )
 JackSessionCallback = CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p)
-JackCustomDataAppearanceCallback = CFUNCTYPE(
-    None, c_char_p, c_char_p, jack_custom_change_t, c_void_p
-)
 JackPropertyChangeCallback = CFUNCTYPE(
     None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
 )
@@ -1616,98 +1607,6 @@ def uuid_unparse(uuid, encoding=ENCODING):
         return _d(uuid_str.value, encoding)
 
     return ""
-
-
-# -------------------------------------------------------------------------------------------------
-# Custom
-
-_custom_appearance_callback = None
-
-try:
-    jlib.jack_custom_publish_data.argtypes = [POINTER(jack_client_t), c_char_p, c_void_p, c_size_t]
-    jlib.jack_custom_publish_data.restype = c_int
-except AttributeError:
-    jlib.jack_custom_publish_data = None
-
-try:
-    jlib.jack_custom_get_data.argtypes = [
-        POINTER(jack_client_t),
-        c_char_p,
-        c_char_p,
-        POINTER(c_void_p),
-        POINTER(c_size_t),
-    ]
-    jlib.jack_custom_get_data.restype = c_int
-except AttributeError:
-    jlib.jack_custom_get_data = None
-
-try:
-    jlib.jack_custom_unpublish_data.argtypes = [POINTER(jack_client_t), c_char_p]
-    jlib.jack_custom_unpublish_data.restype = c_int
-except AttributeError:
-    jlib.jack_custom_unpublish_data = None
-
-try:
-    jlib.jack_custom_get_keys.argtypes = [POINTER(jack_client_t), c_char_p]
-    jlib.jack_custom_get_keys.restype = POINTER(c_char_p)
-except AttributeError:
-    jlib.jack_custom_get_keys = None
-
-try:
-    jlib.jack_custom_set_data_appearance_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackCustomDataAppearanceCallback,
-        c_void_p,
-    ]
-    jlib.jack_custom_set_data_appearance_callback.restype = c_int
-except AttributeError:
-    jlib.jack_custom_set_data_appearance_callback = None
-
-
-def custom_publish_data(client, key, data, size):
-    if jlib.jack_custom_publish_data:
-        return jlib.jack_custom_publish_data(client, _e(key), data, size)
-
-    return -1
-
-
-def custom_get_data(client, client_name, key):
-    # NOTE - this function has no extra arguments in jacklib
-    # Instead, data and size will be passed in return value
-    # in form of (int ret, void* data, size_t size)
-
-    if jlib.jack_custom_get_data:
-        data = c_void_p(0)
-        size = c_size_t(0)
-        ret = jlib.jack_custom_get_data(
-            client, _e(client_name), _e(key), pointer(data), pointer(size)
-        )
-        return ret, data, size
-
-    return -1, None, 0
-
-
-def custom_unpublish_data(client, key):
-    if jlib.jack_custom_unpublish_data:
-        return jlib.jack_custom_unpublish_data(client, _e(key))
-
-    return -1
-
-
-def custom_get_keys(client, client_name):
-    if jlib.jack_custom_get_keys:
-        return jlib.jack_custom_get_keys(client, _e(client_name))
-    return None
-
-
-def custom_set_data_appearance_callback(client, custom_callback, arg):
-    if jlib.jack_custom_set_data_appearance_callback:
-        global _custom_appearance_callback
-        _custom_appearance_callback = JackCustomDataAppearanceCallback(custom_callback)
-        return jlib.jack_custom_set_data_appearance_callback(
-            client, _custom_appearance_callback, arg
-        )
-    return -1
 
 
 # -------------------------------------------------------------------------------------------------
