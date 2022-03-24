@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""JACK ctypes definitions for usage in python applications."""
 
 # JACK ctypes definitions for usage in python applications
 # Copyright (C) 2010-2020 Filipe Coelho <falktx@falktx.com>

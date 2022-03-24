@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Helper functions for extra jacklib functionality."""
 
 # Helper functions for extra jacklib functionality
 # Copyright (C) 2010-2020 Filipe Coelho <falktx@falktx.com>
