@@ -1764,7 +1764,8 @@ except AttributeError:
 
 
 def free_description(description, free_description_itself=0):
-    jlib.jack_free_description(description, free_description_itself)
+    if jlib.jack_free_description:
+        jlib.jack_free_description(description, free_description_itself)
 
 
 def _decode_property(prop, encoding=ENCODING):
@@ -1808,7 +1809,7 @@ def get_all_properties(encoding=ENCODING):
                     for p_idx in range(description.property_cnt)
                 ]
 
-            jlib.jack_free_description(description, 0)
+            free_description(description, 0)
 
     free(descriptions)
     return results
@@ -1823,7 +1824,7 @@ def get_properties(subject, encoding=ENCODING):
         for p_idx in range(description.property_cnt):
             results.append(_decode_property(description.properties[p_idx], encoding))
 
-    jlib.jack_free_description(byref(description), 0)
+    free_description(byref(description), 0)
     return results
 
 
