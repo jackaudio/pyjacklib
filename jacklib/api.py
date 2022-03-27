@@ -939,18 +939,24 @@ jlib.jack_port_name_size.restype = c_int
 jlib.jack_port_type_size.argtypes = None
 jlib.jack_port_type_size.restype = c_int
 
+# JACK1 >= 0.125.0, JACK2 >= 1.19.11
 try:
-    jlib.jack_port_uuid.argtypes = [POINTER(jack_port_t)]
-    jlib.jack_port_uuid.restype = jack_uuid_t
+    jlib.jack_port_rename.argtypes = [POINTER(jack_client_t), POINTER(jack_port_t), c_char_p]
+    jlib.jack_port_rename.restype = c_int
 except AttributeError:
-    jlib.jack_port_uuid = None
-
+    jlib.jack_port_rename = None
 
 try:
     jlib.jack_port_type_get_buffer_size.argtypes = [POINTER(jack_client_t), c_char_p]
     jlib.jack_port_type_get_buffer_size.restype = c_size_t
 except AttributeError:
     jlib.jack_port_type_get_buffer_size = None
+
+try:
+    jlib.jack_port_uuid.argtypes = [POINTER(jack_port_t)]
+    jlib.jack_port_uuid.restype = jack_uuid_t
+except AttributeError:
+    jlib.jack_port_uuid = None
 
 
 def port_register(client, port_name, port_type, flags, buffer_size):
@@ -1028,6 +1034,14 @@ def port_untie(port):
 
 def port_set_name(port, port_name):
     return jlib.jack_port_set_name(port, _e(port_name))
+
+
+# JACK1 >= 0.125.0, JACK2 >= 1.19.11
+def port_rename(client, port, port_name):
+    if jlib.jack_port_rename:
+        return jlib.jack_port_rename(client, port, _e(port_name))
+
+    return -1
 
 
 def port_set_alias(port, alias):
