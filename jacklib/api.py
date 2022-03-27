@@ -402,9 +402,9 @@ except AttributeError:
 
 
 # JACK2 only:
-def get_version_string():
+def get_version_string(encoding=ENCODING):
     if jlib.jack_get_version_string:
-        return jlib.jack_get_version_string()
+        return _d(jlib.jack_get_version_string(), encoding)
 
     return None
 
@@ -416,9 +416,10 @@ def client_open(client_name, options, status, uuid=""):
     return None
 
 
-def client_rename(client, new_name):
+# JACK1 < 0.126:
+def client_rename(client, new_name, encoding=ENCODING):
     if jlib.jack_client_rename:
-        return jlib.jack_client_rename(client, _e(new_name))
+        return _d(jlib.jack_client_rename(client, _e(new_name)), encoding)
 
     return None
 
@@ -437,9 +438,9 @@ def client_name_size():
     return 0
 
 
-def get_client_name(client):
+def get_client_name(client, encoding=ENCODING):
     if jlib.jack_get_client_name:
-        return jlib.jack_get_client_name(client)
+        return _d(jlib.jack_get_client_name(client), encoding)
 
     return None
 
@@ -971,20 +972,20 @@ def port_get_buffer(port, nframes):
     return jlib.jack_port_get_buffer(port, nframes)
 
 
-def port_name(port):
-    return _d(jlib.jack_port_name(port))
+def port_name(port, encoding=ENCODING):
+    return _d(jlib.jack_port_name(port), encoding)
 
 
-def port_short_name(port):
-    return _d(jlib.jack_port_short_name(port))
+def port_short_name(port, encoding=ENCODING):
+    return _d(jlib.jack_port_short_name(port), encoding)
 
 
 def port_flags(port):
     return jlib.jack_port_flags(port)
 
 
-def port_type(port):
-    return _d(jlib.jack_port_type(port))
+def port_type(port, encoding=ENCODING):
+    return _d(jlib.jack_port_type(port), encoding)
 
 
 # JACK2 only:
@@ -1004,24 +1005,24 @@ def port_connected_to(port, port_name):
     return jlib.jack_port_connected_to(port, _e(port_name))
 
 
-def port_get_connections(port):
+def port_get_connections(port, encoding=ENCODING):
     ports = jlib.jack_port_get_connections(port)
     if not ports:
         return
     for port_name in ports:
         if port_name is None:
             break
-        yield _d(port_name)
+        yield _d(port_name, encoding)
 
 
-def port_get_all_connections(client, port):
+def port_get_all_connections(client, port, encoding=ENCODING):
     ports = jlib.jack_port_get_all_connections(client, port)
     if not ports:
         return
     for port_name in ports:
         if port_name is None:
             break
-        yield _d(port_name)
+        yield _d(port_name, encoding)
 
 
 def port_tie(src, dst):
@@ -1052,14 +1053,14 @@ def port_unset_alias(port, alias):
     return jlib.jack_port_unset_alias(port, _e(alias))
 
 
-def port_get_aliases(port):
-    # NOTE - this function has no 2nd argument in jacklib
+def port_get_aliases(port, encoding=ENCODING):
+    # NOTE - this function has no input argument in jacklib
     # Instead, aliases will be passed in return value, in form of (int ret, str alias1, str alias2)
     name_size = port_name_size()
     alias_type = c_char_p * 2
     aliases = alias_type(b" " * name_size, b" " * name_size)
     ret = jlib.jack_port_get_aliases(port, pointer(aliases))
-    return ret, _d(aliases[0]), _d(aliases[1])
+    return ret, _d(aliases[0], encoding), _d(aliases[1], encoding)
 
 
 def port_request_monitor(port, onoff):
@@ -1558,9 +1559,9 @@ def session_event_free(event):
         jlib.jack_session_event_free(event)
 
 
-def client_get_uuid(client):
+def client_get_uuid(client, encoding=ENCODING):
     if jlib.jack_client_get_uuid:
-        return _d(jlib.jack_client_get_uuid(client))
+        return _d(jlib.jack_client_get_uuid(client), encoding)
 
     return None
 
@@ -1577,16 +1578,16 @@ def session_commands_free(cmds):
         jlib.jack_session_commands_free(cmds)
 
 
-def get_uuid_for_client_name(client, client_name):
+def get_uuid_for_client_name(client, client_name, encoding=ENCODING):
     if jlib.jack_get_uuid_for_client_name:
-        return jlib.jack_get_uuid_for_client_name(client, _e(client_name))
+        return _d(jlib.jack_get_uuid_for_client_name(client, _e(client_name)), encoding)
 
     return None
 
 
-def get_client_name_by_uuid(client, client_uuid):
+def get_client_name_by_uuid(client, client_uuid, encoding=ENCODING):
     if jlib.jack_get_client_name_by_uuid:
-        return jlib.jack_get_client_name_by_uuid(client, _e(client_uuid))
+        return _d(jlib.jack_get_client_name_by_uuid(client, _e(client_uuid)), encoding)
 
     return None
 
