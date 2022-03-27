@@ -213,12 +213,15 @@ JackPositionTimecode = 0x20
 JackBBTFrameOffset = 0x40
 JackAudioVideoRatio = 0x80
 JackVideoFrameOffset = 0x100
+# JACK2 1.9.19+:
+JackTickDouble = 0x200
 JACK_POSITION_MASK = (
     JackPositionBBT
     | JackPositionTimecode
     | JackBBTFrameOffset
     | JackAudioVideoRatio
     | JackVideoFrameOffset
+    | JackTickDouble
 )
 
 # enum JackSessionEventType
@@ -268,7 +271,8 @@ class jack_position_t(Structure):
         ("bbt_offset", jack_nframes_t),
         ("audio_frames_per_video_frame", c_float),
         ("video_offset", jack_nframes_t),
-        ("padding", ARRAY(c_int32, 7)),
+        ("tick_double", c_double),
+        ("padding", ARRAY(c_int32, 5)),
         ("unique_2", jack_unique_t),
     ]
 
