@@ -409,7 +409,7 @@ def get_version_string():
     return None
 
 
-def client_open(client_name, options, status, uuid=""):
+def client_open(client_name, options, status, uuid="") -> 'pointer[jack_client_t]':
     if jlib.jack_client_open:
         return jlib.jack_client_open(_e(client_name), options, status, _e(uuid) if uuid else None)
 
