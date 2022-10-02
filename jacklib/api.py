@@ -41,6 +41,7 @@ from ctypes import (
     sizeof,
 )
 from sys import platform
+from typing import Iterator
 
 # -------------------------------------------------------------------------------------------------
 # Load JACK shared library
@@ -241,14 +242,42 @@ PropertyDeleted = 2
 
 
 class jack_midi_event_t(Structure):
-    _fields_ = [("time", jack_nframes_t), ("size", c_size_t), ("buffer", POINTER(jack_midi_data_t))]
+    time: jack_nframes_t
+    size: c_size_t
+    buffer: 'pointer[jack_midi_data_t]'
+    _fields_ = [
+        ("time", jack_nframes_t),
+        ("size", c_size_t),
+        ("buffer", POINTER(jack_midi_data_t))]
 
 
 class jack_latency_range_t(Structure):
+    min: jack_nframes_t
+    max: jack_nframes_t
     _fields_ = [("min", jack_nframes_t), ("max", jack_nframes_t)]
 
 
 class jack_position_t(Structure):
+    unique_1: jack_unique_t
+    usecs: jack_time_t
+    frame_rate: jack_nframes_t
+    frame: jack_nframes_t
+    valid: jack_position_bits_t
+    bar: c_int32
+    beat: c_int32
+    tick: c_int32
+    bar_start_tick: c_double
+    beats_per_bar: c_float
+    beat_type: c_float
+    ticks_per_beat: c_double
+    beats_per_minute: c_double
+    frame_time: c_double
+    next_time: c_double
+    bbt_offset: jack_nframes_t
+    audio_frames_per_video_frame: c_float
+    video_offset: jack_nframes_t
+    padding: ARRAY(c_int32, 7)
+    unique_2: jack_unique_t
     _fields_ = [
         ("unique_1", jack_unique_t),
         ("usecs", jack_time_t),
@@ -294,10 +323,17 @@ class jack_session_command_t(Structure):
 
 
 class jack_property_t(Structure):
+    key: c_char_p
+    data: c_char_p
+    type: c_char_p
     _fields_ = [("key", c_char_p), ("data", c_char_p), ("type", c_char_p)]
 
 
 class jack_description_t(Structure):
+    subject: jack_uuid_t
+    property_cnt: c_uint32
+    properties: 'pointer[jack_property_t]'
+    property_size: c_uint32
     _fields_ = [
         ("subject", jack_uuid_t),
         ("property_cnt", c_uint32),
@@ -971,19 +1007,19 @@ def port_get_buffer(port, nframes):
     return jlib.jack_port_get_buffer(port, nframes)
 
 
-def port_name(port):
+def port_name(port) -> str:
     return _d(jlib.jack_port_name(port))
 
 
-def port_short_name(port):
+def port_short_name(port) -> str:
     return _d(jlib.jack_port_short_name(port))
 
 
-def port_flags(port):
+def port_flags(port) -> int:
     return jlib.jack_port_flags(port)
 
 
-def port_type(port):
+def port_type(port) -> str:
     return _d(jlib.jack_port_type(port))
 
 
@@ -1004,7 +1040,7 @@ def port_connected_to(port, port_name):
     return jlib.jack_port_connected_to(port, _e(port_name))
 
 
-def port_get_connections(port):
+def port_get_connections(port) -> Iterator[str]:
     ports = jlib.jack_port_get_connections(port)
     if not ports:
         return
@@ -1014,7 +1050,7 @@ def port_get_connections(port):
         yield _d(port_name)
 
 
-def port_get_all_connections(client, port):
+def port_get_all_connections(client, port) -> Iterator[str]:
     ports = jlib.jack_port_get_all_connections(client, port)
     if not ports:
         return
@@ -1032,12 +1068,12 @@ def port_untie(port):
     return jlib.jack_port_untie(port)
 
 
-def port_set_name(port, port_name):
+def port_set_name(port, port_name: str):
     return jlib.jack_port_set_name(port, _e(port_name))
 
 
 # JACK1 >= 0.125.0, JACK2 >= 1.19.11
-def port_rename(client, port, port_name):
+def port_rename(client, port, port_name: str):
     if jlib.jack_port_rename:
         return jlib.jack_port_rename(client, port, _e(port_name))
 
@@ -1078,11 +1114,11 @@ def port_monitoring_input(port):
     return jlib.jack_port_monitoring_input(port)
 
 
-def connect(client, source_port, destination_port):
+def connect(client, source_port: str, destination_port: str):
     return jlib.jack_connect(client, _e(source_port), _e(destination_port))
 
 
-def disconnect(client, source_port, destination_port):
+def disconnect(client, source_port: str, destination_port: str):
     return jlib.jack_disconnect(client, _e(source_port), _e(destination_port))
 
 
@@ -1194,17 +1230,18 @@ jlib.jack_port_by_id.argtypes = [POINTER(jack_client_t), jack_port_id_t]
 jlib.jack_port_by_id.restype = POINTER(jack_port_t)
 
 
-def get_ports(client, port_name_pattern=None, type_name_pattern=None, flags=0):
+def get_ports(client, port_name_pattern=None,
+              type_name_pattern=None, flags=0) -> 'pointer[c_char_p]':
     return jlib.jack_get_ports(
         client, _e(port_name_pattern or ""), _e(type_name_pattern or ""), flags
     )
 
 
-def port_by_name(client, port_name):
+def port_by_name(client, port_name: str) -> 'pointer[jack_port_t]':
     return jlib.jack_port_by_name(client, _e(port_name))
 
 
-def port_by_id(client, port_id):
+def port_by_id(client, port_id) -> 'pointer[jack_port_t]':
     return jlib.jack_port_by_id(client, port_id)
 
 
