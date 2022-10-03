@@ -545,16 +545,14 @@ def set_process_thread(client, thread_callback, arg):
 _used_callbacks = list[CFUNCTYPE]()
 
 
-@dataclass
 class _Cb:
-    string: str
-    callback: CFUNCTYPE
-    restype: Any
-    
-    def __post_init__(self):
-        full_string = f'jack_{self.string}_callback'
+    def __init__(self, ref: str, callback: CFUNCTYPE, restype, suffix='_callback'):
+        self.ref = ref
+        self.callback = callback
+        self.restype = restype
+        self.setter_name = ref + suffix
         try:
-            func = getattr(globals()['jlib'], full_string)
+            func = getattr(globals()['jlib'], 'jack_' + self.setter_name)
             func.argstypes = [POINTER(jack_client_t), self.callback, c_void_p]
             func.restype = self.restype
             self.jlib_func = func
@@ -568,10 +566,12 @@ _CBS = (
         c_int),
     _Cb('on_shutdown',
         CFUNCTYPE(None, c_void_p),
-        None),
+        None,
+        suffix=''),
     _Cb('on_info_shutdown',
         CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p),
-        None),
+        None,
+        suffix=''),
     _Cb('set_process',
         CFUNCTYPE(c_int, jack_nframes_t, c_void_p),
         c_int),
@@ -610,14 +610,16 @@ _CBS = (
         c_int)
     )
 
-
+# decorator for callback setter.
+# note that the decorated function is never executed
+# everything depends on its name.
 def callback_setter(func):
     for _cb in _CBS:
-        if ((_cb.restype is c_int and func.__name__ == f'{_cb.string}_callback')
-                or (_cb.restype is None and func.__name__ == _cb.string)):
+        if func.__name__ == _cb.setter_name:
             break
     else:
-        return
+        raise BaseException(
+            f'callback_setter decorator: no _Cb found with setter_name "{func.__name__}"')
     
     def wrapper(client, callback, arg):
         if _cb.jlib_func is None:
