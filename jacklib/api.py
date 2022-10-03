@@ -40,9 +40,8 @@ from ctypes import (
     pointer,
     sizeof,
 )
-from dataclasses import dataclass
 from sys import platform
-from typing import Any, Iterator
+from typing import Callable, Iterator
 
 # -------------------------------------------------------------------------------------------------
 # Load JACK shared library
@@ -423,11 +422,11 @@ except AttributeError:
 
 
 # JACK2 only:
-def get_version_string():
+def get_version_string() -> str:
     if jlib.jack_get_version_string:
-        return jlib.jack_get_version_string()
+        return _d(jlib.jack_get_version_string())
 
-    return None
+    return ''
 
 
 def client_open(client_name: str, options, status, uuid="") -> 'pointer[jack_client_t]':
@@ -542,7 +541,17 @@ def set_process_thread(client, thread_callback, arg):
 
 # -------------------------------------------------------------------------------------------------
 # Client Callbacks
+
+# this list is used to prevent added elements to be removed by python cleaner
 _used_callbacks = list[CFUNCTYPE]()
+
+JackTimebaseCallback = CFUNCTYPE(
+    None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
+)
+JackPropertyChangeCallback = CFUNCTYPE(
+    None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
+)
+JackErrorCallback = CFUNCTYPE(None, c_char_p)
 
 
 class _Cb:
@@ -607,13 +616,29 @@ _CBS = (
         c_int),
     _Cb('set_latency',
         CFUNCTYPE(None, jack_latency_callback_mode_t, c_void_p),
-        c_int)
+        c_int),
+    # other callbacks
+    _Cb('set_sync',
+        CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p),
+        c_int),
+    _Cb('set_session',
+        CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p),
+        c_int),
+    _Cb('set_property_change',
+        CFUNCTYPE(None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p),
+        c_int),
+    # following is not really a callback setter, but it uses the same scheme
+    _Cb('set_process_thread',
+        CFUNCTYPE(c_void_p, c_void_p),
+        c_int,
+        suffix=''),
     )
 
-# decorator for callback setter.
-# note that the decorated function is never executed
-# everything depends on its name.
-def callback_setter(func):
+
+def callback_setter(func: Callable):
+    ''' decorator for callback setter.
+        note that the decorated function is never executed
+        everything depends on its name. '''
     for _cb in _CBS:
         if func.__name__ == _cb.setter_name:
             break
@@ -1205,8 +1230,8 @@ _sync_callback = _timebase_callback = None
 jlib.jack_release_timebase.argtypes = [POINTER(jack_client_t)]
 jlib.jack_release_timebase.restype = c_int
 
-jlib.jack_set_sync_callback.argtypes = [POINTER(jack_client_t), JackSyncCallback, c_void_p]
-jlib.jack_set_sync_callback.restype = c_int
+# jlib.jack_set_sync_callback.argtypes = [POINTER(jack_client_t), JackSyncCallback, c_void_p]
+# jlib.jack_set_sync_callback.restype = c_int
 
 jlib.jack_set_sync_timeout.argtypes = [POINTER(jack_client_t), jack_time_t]
 jlib.jack_set_sync_timeout.restype = c_int
@@ -1241,12 +1266,9 @@ jlib.jack_transport_stop.restype = None
 def release_timebase(client):
     return jlib.jack_release_timebase(client)
 
-
+@callback_setter
 def set_sync_callback(client, sync_callback, arg):
-    global _sync_callback
-    _sync_callback = JackSyncCallback(sync_callback)
-    return jlib.jack_set_sync_callback(client, _sync_callback, arg)
-
+    ...
 
 def set_sync_timeout(client, timeout):
     return jlib.jack_set_sync_timeout(client, timeout)
@@ -1343,18 +1365,6 @@ def midi_get_lost_event_count(port_buffer):
 # -------------------------------------------------------------------------------------------------
 # Session
 
-_session_callback = None
-
-try:
-    jlib.jack_set_session_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackSessionCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_session_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_session_callback = None
-
 try:
     jlib.jack_session_reply.argtypes = [POINTER(jack_client_t), POINTER(jack_session_event_t)]
     jlib.jack_session_reply.restype = c_int
@@ -1426,15 +1436,9 @@ try:
 except AttributeError:
     jlib.jack_uuid_unparse = None
 
-
+@callback_setter
 def set_session_callback(client, session_callback, arg):
-    if jlib.jack_set_session_callback:
-        global _session_callback
-        _session_callback = JackSessionCallback(session_callback)
-        return jlib.jack_set_session_callback(client, _session_callback, arg)
-
-    return -1
-
+    ...
 
 def session_reply(client, event):
     if jlib.jack_session_reply:
@@ -1549,12 +1553,6 @@ try:
     ]
     jlib.jack_set_property.restype = c_int
 
-    jlib.jack_set_property_change_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackPropertyChangeCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_property_change_callback.restype = c_int
 except AttributeError:
     jlib.jack_free_description = None
     jlib.jack_get_properties = None
@@ -1563,7 +1561,6 @@ except AttributeError:
     jlib.jack_remove_properties = None
     jlib.jack_remove_property = None
     jlib.jack_set_property = None
-    jlib.jack_set_property_change_callback = None
 
 
 def free_description(description, free_description_itself=0):
@@ -1770,11 +1767,6 @@ def set_port_property(client, port, key, value, type=None, encoding=ENCODING):
 def set_port_pretty_name(client, port, value, encoding=ENCODING):
     return set_port_property(client, port, JACK_METADATA_PRETTY_NAME, value, "text/plain", encoding)
 
-
+@callback_setter
 def set_property_change_callback(client, callback, arg=None):
-    if jlib.jack_set_property_change_callback:
-        global _property_change_callback
-        _property_change_callback = JackPropertyChangeCallback(callback)
-        return jlib.jack_set_property_change_callback(client, _property_change_callback, arg)
-
-    return -1
+    ...
