@@ -41,6 +41,7 @@ from ctypes import (
     sizeof,
 )
 from sys import platform
+from typing import Callable, Iterator
 
 # -------------------------------------------------------------------------------------------------
 # Load JACK shared library
@@ -241,14 +242,42 @@ PropertyDeleted = 2
 
 
 class jack_midi_event_t(Structure):
-    _fields_ = [("time", jack_nframes_t), ("size", c_size_t), ("buffer", POINTER(jack_midi_data_t))]
+    time: jack_nframes_t
+    size: c_size_t
+    buffer: 'pointer[jack_midi_data_t]'
+    _fields_ = [
+        ("time", jack_nframes_t),
+        ("size", c_size_t),
+        ("buffer", POINTER(jack_midi_data_t))]
 
 
 class jack_latency_range_t(Structure):
+    min: jack_nframes_t
+    max: jack_nframes_t
     _fields_ = [("min", jack_nframes_t), ("max", jack_nframes_t)]
 
 
 class jack_position_t(Structure):
+    unique_1: jack_unique_t
+    usecs: jack_time_t
+    frame_rate: jack_nframes_t
+    frame: jack_nframes_t
+    valid: jack_position_bits_t
+    bar: c_int32
+    beat: c_int32
+    tick: c_int32
+    bar_start_tick: c_double
+    beats_per_bar: c_float
+    beat_type: c_float
+    ticks_per_beat: c_double
+    beats_per_minute: c_double
+    frame_time: c_double
+    next_time: c_double
+    bbt_offset: jack_nframes_t
+    audio_frames_per_video_frame: c_float
+    video_offset: jack_nframes_t
+    padding: ARRAY(c_int32, 7)
+    unique_2: jack_unique_t
     _fields_ = [
         ("unique_1", jack_unique_t),
         ("usecs", jack_time_t),
@@ -294,10 +323,17 @@ class jack_session_command_t(Structure):
 
 
 class jack_property_t(Structure):
+    key: c_char_p
+    data: c_char_p
+    type: c_char_p
     _fields_ = [("key", c_char_p), ("data", c_char_p), ("type", c_char_p)]
 
 
 class jack_description_t(Structure):
+    subject: jack_uuid_t
+    property_cnt: c_uint32
+    properties: 'pointer[jack_property_t]'
+    property_size: c_uint32
     _fields_ = [
         ("subject", jack_uuid_t),
         ("property_cnt", c_uint32),
@@ -309,33 +345,12 @@ class jack_description_t(Structure):
 # -------------------------------------------------------------------------------------------------
 # Callbacks
 
-JackLatencyCallback = CFUNCTYPE(None, jack_latency_callback_mode_t, c_void_p)
-JackProcessCallback = CFUNCTYPE(c_int, jack_nframes_t, c_void_p)
 JackThreadCallback = CFUNCTYPE(c_void_p, c_void_p)
-JackThreadInitCallback = CFUNCTYPE(None, c_void_p)
-JackGraphOrderCallback = CFUNCTYPE(c_int, c_void_p)
-JackXRunCallback = CFUNCTYPE(c_int, c_void_p)
-JackBufferSizeCallback = CFUNCTYPE(c_int, jack_nframes_t, c_void_p)
-JackSampleRateCallback = CFUNCTYPE(c_int, jack_nframes_t, c_void_p)
-JackPortRegistrationCallback = CFUNCTYPE(None, jack_port_id_t, c_int, c_void_p)
-JackClientRegistrationCallback = CFUNCTYPE(None, c_char_p, c_int, c_void_p)
-# JACK2 only:
-JackClientRenameCallback = CFUNCTYPE(c_int, c_char_p, c_char_p, c_void_p)
-JackPortConnectCallback = CFUNCTYPE(None, jack_port_id_t, jack_port_id_t, c_int, c_void_p)
-# JACK2 only:
-JackPortRenameCallback = CFUNCTYPE(None, jack_port_id_t, c_char_p, c_char_p, c_void_p)
-JackFreewheelCallback = CFUNCTYPE(None, c_int, c_void_p)
-JackShutdownCallback = CFUNCTYPE(None, c_void_p)
-JackInfoShutdownCallback = CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p)
-JackSyncCallback = CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p)
 JackTimebaseCallback = CFUNCTYPE(
     None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
 )
-JackSessionCallback = CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p)
-JackPropertyChangeCallback = CFUNCTYPE(
-    None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
-)
 JackErrorCallback = CFUNCTYPE(None, c_char_p)
+
 
 # -------------------------------------------------------------------------------------------------
 # Functions
@@ -402,35 +417,36 @@ except AttributeError:
 
 
 # JACK2 only:
-def get_version_string():
+def get_version_string() -> str:
     if jlib.jack_get_version_string:
-        return jlib.jack_get_version_string()
+        return _d(jlib.jack_get_version_string())
 
-    return None
+    return ''
 
 
-def client_open(client_name, options, status, uuid=""):
+def client_open(client_name: str, options, status, uuid="") -> 'pointer[jack_client_t]':
     if jlib.jack_client_open:
-        return jlib.jack_client_open(_e(client_name), options, status, _e(uuid) if uuid else None)
+        return jlib.jack_client_open(
+            _e(client_name), options, status, _e(uuid) if uuid else None)
 
     return None
 
 
-def client_rename(client, new_name):
+def client_rename(client, new_name: str):
     if jlib.jack_client_rename:
         return jlib.jack_client_rename(client, _e(new_name))
 
     return None
 
 
-def client_close(client):
+def client_close(client) -> int:
     if jlib.jack_client_close:
         return jlib.jack_client_close(client)
 
     return -1
 
 
-def client_name_size():
+def client_name_size() -> int:
     if jlib.jack_client_name_size:
         return jlib.jack_client_name_size()
 
@@ -444,14 +460,14 @@ def get_client_name(client):
     return None
 
 
-def activate(client):
+def activate(client) -> int:
     if jlib.jack_activate:
         return jlib.jack_activate(client)
 
     return -1
 
 
-def deactivate(client):
+def deactivate(client) -> int:
     if jlib.jack_deactivate:
         return jlib.jack_deactivate(client)
 
@@ -459,14 +475,14 @@ def deactivate(client):
 
 
 # JACK2 only:
-def get_client_pid(name):
+def get_client_pid(name: str) -> int:
     if jlib.jack_get_client_pid:
         return jlib.jack_get_client_pid(_e(name))
 
     return 0
 
 
-def is_realtime(client):
+def is_realtime(client) -> int:
     if jlib.jack_is_realtime:
         return jlib.jack_is_realtime(client)
 
@@ -521,289 +537,182 @@ def set_process_thread(client, thread_callback, arg):
 # -------------------------------------------------------------------------------------------------
 # Client Callbacks
 
-_thread_init_callback = _shutdown_callback = _info_shutdown_callback = None
-_process_callback = _freewheel_callback = _bufsize_callback = _srate_callback = None
-_client_registration_callback = _client_rename_callback = None
-_port_registration_callback = _port_connect_callback = _port_rename_callback = None
-_graph_callback = _xrun_callback = _latency_callback = None
-_property_change_callback = None
+# this list is used to prevent added elements to be removed by python cleaner
+_used_callbacks = list[CFUNCTYPE]()
 
-try:
-    jlib.jack_set_thread_init_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackThreadInitCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_thread_init_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_thread_init_callback = None
-
-try:
-    jlib.jack_on_shutdown.argtypes = [POINTER(jack_client_t), JackShutdownCallback, c_void_p]
-    jlib.jack_on_shutdown.restype = None
-except AttributeError:
-    jlib.jack_on_shutdown = None
-
-try:
-    jlib.jack_on_info_shutdown.argtypes = [
-        POINTER(jack_client_t),
-        JackInfoShutdownCallback,
-        c_void_p,
-    ]
-    jlib.jack_on_info_shutdown.restype = None
-except AttributeError:
-    jlib.jack_on_info_shutdown = None
-
-try:
-    jlib.jack_set_process_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackProcessCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_process_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_process_callback = None
-
-try:
-    jlib.jack_set_freewheel_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackFreewheelCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_freewheel_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_freewheel_callback = None
-
-try:
-    jlib.jack_set_buffer_size_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackBufferSizeCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_buffer_size_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_buffer_size_callback = None
-
-try:
-    jlib.jack_set_sample_rate_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackSampleRateCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_sample_rate_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_sample_rate_callback = None
-
-try:
-    jlib.jack_set_client_registration_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackClientRegistrationCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_client_registration_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_client_registration_callback = None
-
-try:
-    jlib.jack_set_client_rename_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackClientRenameCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_client_rename_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_client_rename_callback = None
-
-try:
-    jlib.jack_set_port_registration_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackPortRegistrationCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_port_registration_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_port_registration_callback = None
-
-try:
-    jlib.jack_set_port_connect_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackPortConnectCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_port_connect_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_port_connect_callback = None
-
-try:
-    jlib.jack_set_port_rename_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackPortRenameCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_port_rename_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_port_rename_callback = None
-
-try:
-    jlib.jack_set_graph_order_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackGraphOrderCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_graph_order_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_graph_order_callback = None
-
-try:
-    jlib.jack_set_xrun_callback.argtypes = [POINTER(jack_client_t), JackXRunCallback, c_void_p]
-    jlib.jack_set_xrun_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_xrun_callback = None
-
-try:
-    jlib.jack_set_latency_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackLatencyCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_latency_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_latency_callback = None
+JackTimebaseCallback = CFUNCTYPE(
+    None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
+)
+JackPropertyChangeCallback = CFUNCTYPE(
+    None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
+)
+JackErrorCallback = CFUNCTYPE(None, c_char_p)
 
 
-def set_thread_init_callback(client, thread_init_callback, arg):
-    if jlib.jack_set_thread_init_callback:
-        global _thread_init_callback
-        _thread_init_callback = JackThreadInitCallback(thread_init_callback)
-        return jlib.jack_set_thread_init_callback(client, _thread_init_callback, arg)
+class _Cb:
+    def __init__(self, ref: str, callback: CFUNCTYPE, restype, suffix='_callback'):
+        self.ref = ref
+        self.callback = callback
+        self.restype = restype
+        self.setter_name = ref + suffix
+        try:
+            func = getattr(globals()['jlib'], 'jack_' + self.setter_name)
+            func.argstypes = [POINTER(jack_client_t), self.callback, c_void_p]
+            func.restype = self.restype
+            self.jlib_func = func
+        except AttributeError:
+            self.jlib_func = None
 
-    return -1
+
+_CBS = (
+    _Cb('set_thread_init',
+        CFUNCTYPE(None, c_void_p),
+        c_int),
+    _Cb('on_shutdown',
+        CFUNCTYPE(None, c_void_p),
+        None,
+        suffix=''),
+    _Cb('on_info_shutdown',
+        CFUNCTYPE(None, jack_status_t, c_char_p, c_void_p),
+        None,
+        suffix=''),
+    _Cb('set_process',
+        CFUNCTYPE(c_int, jack_nframes_t, c_void_p),
+        c_int),
+    _Cb('set_freewheel',
+        CFUNCTYPE(None, c_int, c_void_p),
+        c_int),
+    _Cb('set_buffer_size',
+        CFUNCTYPE(c_int, jack_nframes_t, c_void_p),
+        c_int),
+    _Cb('set_sample_rate',
+        CFUNCTYPE(c_int, jack_nframes_t, c_void_p),
+        c_int),
+    _Cb('set_client_registration',
+        CFUNCTYPE(None, c_char_p, c_int, c_void_p),
+        c_int),
+    _Cb('set_client_rename',
+        CFUNCTYPE(c_int, c_char_p, c_char_p, c_void_p),
+        c_int),
+    _Cb('set_port_registration',
+        CFUNCTYPE(None, jack_port_id_t, c_int, c_void_p),
+        c_int),
+    _Cb('set_port_connect',
+        CFUNCTYPE(None, jack_port_id_t, jack_port_id_t, c_int, c_void_p),
+        c_int),
+    _Cb('set_port_rename',
+        CFUNCTYPE(None, jack_port_id_t, c_char_p, c_char_p, c_void_p),
+        c_int),
+    _Cb('set_graph_order',
+        CFUNCTYPE(c_int, c_void_p),
+        c_int),
+    _Cb('set_xrun',
+        CFUNCTYPE(c_int, c_void_p),
+        c_int),
+    _Cb('set_latency',
+        CFUNCTYPE(None, jack_latency_callback_mode_t, c_void_p),
+        c_int),
+    # other callbacks
+    _Cb('set_sync',
+        CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p),
+        c_int),
+    _Cb('set_session',
+        CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p),
+        c_int),
+    _Cb('set_property_change',
+        CFUNCTYPE(None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p),
+        c_int),
+    ## following is not really a callback setter, but it uses the same scheme
+    # _Cb('set_process_thread',
+    #     CFUNCTYPE(c_void_p, c_void_p),
+    #     c_int,
+    #     suffix='')
+    )
 
 
+def callback_setter(func: Callable):
+    ''' decorator for callback setter.
+        note that the decorated function is never executed
+        everything depends on its name. '''
+    for _cb in _CBS:
+        if func.__name__ == _cb.setter_name:
+            break
+    else:
+        raise BaseException(
+            f'callback_setter decorator: no _Cb found with setter_name "{func.__name__}"')
+    
+    def wrapper(client, callback, arg):
+        if _cb.jlib_func is None:
+            if _cb.restype is c_int:
+                return -1
+            return None
+        
+        _callback = _cb.callback(callback)
+        _used_callbacks.append(_callback)
+        return _cb.jlib_func(client, _callback, arg)
+    return wrapper
+
+@callback_setter
+def set_thread_init_callback(client, thread_init_callback, arg) -> int:
+    ...
+
+@callback_setter
 def on_shutdown(client, shutdown_callback, arg):
-    if jlib.jack_on_shutdown:
-        global _shutdown_callback
-        _shutdown_callback = JackShutdownCallback(shutdown_callback)
-        jlib.jack_on_shutdown(client, _shutdown_callback, arg)
+    ...
 
-
+@callback_setter
 def on_info_shutdown(client, info_shutdown_callback, arg):
-    if jlib.jack_on_info_shutdown:
-        global _info_shutdown_callback
-        _info_shutdown_callback = JackInfoShutdownCallback(info_shutdown_callback)
-        jlib.jack_on_info_shutdown(client, _info_shutdown_callback, arg)
+    ...
 
+@callback_setter
+def set_process_callback(client, process_callback, arg) -> int:
+    ...
 
-def set_process_callback(client, process_callback, arg):
-    if jlib.jack_set_process_callback:
-        global _process_callback
-        _process_callback = JackProcessCallback(process_callback)
-        return jlib.jack_set_process_callback(client, _process_callback, arg)
+@callback_setter
+def set_freewheel_callback(client, freewheel_callback, arg) -> int:
+    ...
 
-    return -1
+@callback_setter
+def set_buffer_size_callback(client, bufsize_callback, arg) -> int:
+    ...
 
+@callback_setter
+def set_sample_rate_callback(client, srate_callback, arg) -> int:
+    ...
 
-def set_freewheel_callback(client, freewheel_callback, arg):
-    if jlib.jack_set_freewheel_callback:
-        global _freewheel_callback
-        _freewheel_callback = JackFreewheelCallback(freewheel_callback)
-        return jlib.jack_set_freewheel_callback(client, _freewheel_callback, arg)
-
-    return -1
-
-
-def set_buffer_size_callback(client, bufsize_callback, arg):
-    if jlib.jack_set_buffer_size_callback:
-        global _bufsize_callback
-        _bufsize_callback = JackBufferSizeCallback(bufsize_callback)
-        return jlib.jack_set_buffer_size_callback(client, _bufsize_callback, arg)
-
-    return -1
-
-
-def set_sample_rate_callback(client, srate_callback, arg):
-    if jlib.jack_set_sample_rate_callback:
-        global _srate_callback
-        _srate_callback = JackSampleRateCallback(srate_callback)
-        return jlib.jack_set_sample_rate_callback(client, _srate_callback, arg)
-
-    return -1
-
-
-def set_client_registration_callback(client, client_registration_callback, arg):
-    if jlib.jack_set_client_registration_callback:
-        global _client_registration_callback
-        _client_registration_callback = JackClientRegistrationCallback(client_registration_callback)
-        return jlib.jack_set_client_registration_callback(
-            client, _client_registration_callback, arg
-        )
-    return -1
-
+@callback_setter
+def set_client_registration_callback(client, client_registration_callback, arg) -> int:
+    ...
 
 # JACK2 only:
-def set_client_rename_callback(client, client_rename_callback, arg):
-    if jlib.jack_set_client_rename_callback:
-        global _client_rename_callback
-        _client_rename_callback = JackClientRenameCallback(client_rename_callback)
-        return jlib.jack_set_client_rename_callback(client, _client_rename_callback, arg)
+@callback_setter
+def set_client_rename_callback(client, client_rename_callback, arg) -> int:
+    ...
 
-    return -1
+@callback_setter
+def set_port_registration_callback(client, port_registration_callback, arg) -> int:
+    ...
 
-
-def set_port_registration_callback(client, port_registration_callback, arg):
-    if jlib.jack_set_port_registration_callback:
-        global _port_registration_callback
-        _port_registration_callback = JackPortRegistrationCallback(port_registration_callback)
-        return jlib.jack_set_port_registration_callback(client, _port_registration_callback, arg)
-
-    return -1
-
-
-def set_port_connect_callback(client, connect_callback, arg):
-    if jlib.jack_set_port_connect_callback:
-        global _port_connect_callback
-        _port_connect_callback = JackPortConnectCallback(connect_callback)
-        return jlib.jack_set_port_connect_callback(client, _port_connect_callback, arg)
-
-    return -1
-
+@callback_setter
+def set_port_connect_callback(client, connect_callback, arg) -> int:
+    ...
 
 # JACK2 only:
-def set_port_rename_callback(client, rename_callback, arg):
-    if jlib.jack_set_port_rename_callback:
-        global _port_rename_callback
-        _port_rename_callback = JackPortRenameCallback(rename_callback)
-        return jlib.jack_set_port_rename_callback(client, _port_rename_callback, arg)
+@callback_setter
+def set_port_rename_callback(client, rename_callback, arg) -> int:
+    ...
 
-    return -1
+@callback_setter
+def set_graph_order_callback(client, graph_callback, arg) -> int:
+    ...
 
+@callback_setter
+def set_xrun_callback(client, xrun_callback, arg) -> int:
+    ...
 
-def set_graph_order_callback(client, graph_callback, arg):
-    if jlib.jack_set_graph_order_callback:
-        global _graph_callback
-        _graph_callback = JackGraphOrderCallback(graph_callback)
-        return jlib.jack_set_graph_order_callback(client, _graph_callback, arg)
-
-    return -1
-
-
-def set_xrun_callback(client, xrun_callback, arg):
-    if jlib.jack_set_xrun_callback:
-        global _xrun_callback
-        _xrun_callback = JackXRunCallback(xrun_callback)
-        return jlib.jack_set_xrun_callback(client, _xrun_callback, arg)
-
-    return -1
-
-
-def set_latency_callback(client, latency_callback, arg):
-    if jlib.jack_set_latency_callback:
-        global _latency_callback
-        _latency_callback = JackLatencyCallback(latency_callback)
-        return jlib.jack_set_latency_callback(client, _latency_callback, arg)
-
-    return -1
-
+@callback_setter
+def set_latency_callback(client, latency_callback, arg) -> int:
+    ...
 
 # -------------------------------------------------------------------------------------------------
 # Server Control
@@ -971,19 +880,19 @@ def port_get_buffer(port, nframes):
     return jlib.jack_port_get_buffer(port, nframes)
 
 
-def port_name(port):
+def port_name(port) -> str:
     return _d(jlib.jack_port_name(port))
 
 
-def port_short_name(port):
+def port_short_name(port) -> str:
     return _d(jlib.jack_port_short_name(port))
 
 
-def port_flags(port):
+def port_flags(port) -> int:
     return jlib.jack_port_flags(port)
 
 
-def port_type(port):
+def port_type(port) -> str:
     return _d(jlib.jack_port_type(port))
 
 
@@ -1004,7 +913,7 @@ def port_connected_to(port, port_name):
     return jlib.jack_port_connected_to(port, _e(port_name))
 
 
-def port_get_connections(port):
+def port_get_connections(port) -> Iterator[str]:
     ports = jlib.jack_port_get_connections(port)
     if not ports:
         return
@@ -1014,7 +923,7 @@ def port_get_connections(port):
         yield _d(port_name)
 
 
-def port_get_all_connections(client, port):
+def port_get_all_connections(client, port) -> Iterator[str]:
     ports = jlib.jack_port_get_all_connections(client, port)
     if not ports:
         return
@@ -1032,12 +941,12 @@ def port_untie(port):
     return jlib.jack_port_untie(port)
 
 
-def port_set_name(port, port_name):
+def port_set_name(port, port_name: str):
     return jlib.jack_port_set_name(port, _e(port_name))
 
 
 # JACK1 >= 0.125.0, JACK2 >= 1.19.11
-def port_rename(client, port, port_name):
+def port_rename(client, port, port_name: str):
     if jlib.jack_port_rename:
         return jlib.jack_port_rename(client, port, _e(port_name))
 
@@ -1078,11 +987,11 @@ def port_monitoring_input(port):
     return jlib.jack_port_monitoring_input(port)
 
 
-def connect(client, source_port, destination_port):
+def connect(client, source_port: str, destination_port: str):
     return jlib.jack_connect(client, _e(source_port), _e(destination_port))
 
 
-def disconnect(client, source_port, destination_port):
+def disconnect(client, source_port: str, destination_port: str):
     return jlib.jack_disconnect(client, _e(source_port), _e(destination_port))
 
 
@@ -1194,17 +1103,18 @@ jlib.jack_port_by_id.argtypes = [POINTER(jack_client_t), jack_port_id_t]
 jlib.jack_port_by_id.restype = POINTER(jack_port_t)
 
 
-def get_ports(client, port_name_pattern=None, type_name_pattern=None, flags=0):
+def get_ports(client, port_name_pattern=None,
+              type_name_pattern=None, flags=0) -> 'pointer[c_char_p]':
     return jlib.jack_get_ports(
         client, _e(port_name_pattern or ""), _e(type_name_pattern or ""), flags
     )
 
 
-def port_by_name(client, port_name):
+def port_by_name(client, port_name: str) -> 'pointer[jack_port_t]':
     return jlib.jack_port_by_name(client, _e(port_name))
 
 
-def port_by_id(client, port_id):
+def port_by_id(client, port_id) -> 'pointer[jack_port_t]':
     return jlib.jack_port_by_id(client, port_id)
 
 
@@ -1315,8 +1225,8 @@ _sync_callback = _timebase_callback = None
 jlib.jack_release_timebase.argtypes = [POINTER(jack_client_t)]
 jlib.jack_release_timebase.restype = c_int
 
-jlib.jack_set_sync_callback.argtypes = [POINTER(jack_client_t), JackSyncCallback, c_void_p]
-jlib.jack_set_sync_callback.restype = c_int
+# jlib.jack_set_sync_callback.argtypes = [POINTER(jack_client_t), JackSyncCallback, c_void_p]
+# jlib.jack_set_sync_callback.restype = c_int
 
 jlib.jack_set_sync_timeout.argtypes = [POINTER(jack_client_t), jack_time_t]
 jlib.jack_set_sync_timeout.restype = c_int
@@ -1351,12 +1261,9 @@ jlib.jack_transport_stop.restype = None
 def release_timebase(client):
     return jlib.jack_release_timebase(client)
 
-
+@callback_setter
 def set_sync_callback(client, sync_callback, arg):
-    global _sync_callback
-    _sync_callback = JackSyncCallback(sync_callback)
-    return jlib.jack_set_sync_callback(client, _sync_callback, arg)
-
+    ...
 
 def set_sync_timeout(client, timeout):
     return jlib.jack_set_sync_timeout(client, timeout)
@@ -1453,18 +1360,6 @@ def midi_get_lost_event_count(port_buffer):
 # -------------------------------------------------------------------------------------------------
 # Session
 
-_session_callback = None
-
-try:
-    jlib.jack_set_session_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackSessionCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_session_callback.restype = c_int
-except AttributeError:
-    jlib.jack_set_session_callback = None
-
 try:
     jlib.jack_session_reply.argtypes = [POINTER(jack_client_t), POINTER(jack_session_event_t)]
     jlib.jack_session_reply.restype = c_int
@@ -1536,15 +1431,9 @@ try:
 except AttributeError:
     jlib.jack_uuid_unparse = None
 
-
+@callback_setter
 def set_session_callback(client, session_callback, arg):
-    if jlib.jack_set_session_callback:
-        global _session_callback
-        _session_callback = JackSessionCallback(session_callback)
-        return jlib.jack_set_session_callback(client, _session_callback, arg)
-
-    return -1
-
+    ...
 
 def session_reply(client, event):
     if jlib.jack_session_reply:
@@ -1659,12 +1548,6 @@ try:
     ]
     jlib.jack_set_property.restype = c_int
 
-    jlib.jack_set_property_change_callback.argtypes = [
-        POINTER(jack_client_t),
-        JackPropertyChangeCallback,
-        c_void_p,
-    ]
-    jlib.jack_set_property_change_callback.restype = c_int
 except AttributeError:
     jlib.jack_free_description = None
     jlib.jack_get_properties = None
@@ -1673,7 +1556,6 @@ except AttributeError:
     jlib.jack_remove_properties = None
     jlib.jack_remove_property = None
     jlib.jack_set_property = None
-    jlib.jack_set_property_change_callback = None
 
 
 def free_description(description, free_description_itself=0):
@@ -1880,11 +1762,6 @@ def set_port_property(client, port, key, value, type=None, encoding=ENCODING):
 def set_port_pretty_name(client, port, value, encoding=ENCODING):
     return set_port_property(client, port, JACK_METADATA_PRETTY_NAME, value, "text/plain", encoding)
 
-
+@callback_setter
 def set_property_change_callback(client, callback, arg=None):
-    if jlib.jack_set_property_change_callback:
-        global _property_change_callback
-        _property_change_callback = JackPropertyChangeCallback(callback)
-        return jlib.jack_set_property_change_callback(client, _property_change_callback, arg)
-
-    return -1
+    ...
