@@ -346,13 +346,8 @@ class jack_description_t(Structure):
 # Callbacks
 
 JackThreadCallback = CFUNCTYPE(c_void_p, c_void_p)
-JackSyncCallback = CFUNCTYPE(c_int, jack_transport_state_t, POINTER(jack_position_t), c_void_p)
 JackTimebaseCallback = CFUNCTYPE(
     None, jack_transport_state_t, jack_nframes_t, POINTER(jack_position_t), c_int, c_void_p
-)
-JackSessionCallback = CFUNCTYPE(None, POINTER(jack_session_event_t), c_void_p)
-JackPropertyChangeCallback = CFUNCTYPE(
-    None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p
 )
 JackErrorCallback = CFUNCTYPE(None, c_char_p)
 
@@ -627,11 +622,11 @@ _CBS = (
     _Cb('set_property_change',
         CFUNCTYPE(None, jack_uuid_t, c_char_p, jack_property_change_t, c_void_p),
         c_int),
-    # following is not really a callback setter, but it uses the same scheme
-    _Cb('set_process_thread',
-        CFUNCTYPE(c_void_p, c_void_p),
-        c_int,
-        suffix=''),
+    ## following is not really a callback setter, but it uses the same scheme
+    # _Cb('set_process_thread',
+    #     CFUNCTYPE(c_void_p, c_void_p),
+    #     c_int,
+    #     suffix='')
     )
 
 
